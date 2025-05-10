@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "diag/trace.h"
 #include "stm32f4xx_hal.h"
+#include "ssd1306.h"
 
 #define BSP_I2C_SPEED                          100000
 
