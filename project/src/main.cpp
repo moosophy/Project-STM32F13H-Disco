@@ -50,15 +50,14 @@ main(int argc, char* argv[])
 	value |= (1 << 7); 		//set the 8th bit to 1 (wake_up = True)
 	HAL_I2C_Mem_Write(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_GAIN_Z, I2C_MEMADD_SIZE_8BIT, &value, 1, HAL_MAX_DELAY);
 
-	// configuration parameters (maybe for later)
-
 	//reading the data:
 	int16_t acc_x = 0, acc_y = 0, acc_z = 0;
 	uint8_t lsb = 0, msb = 0;
 	//offset that i measured on a leveled surface(+-):
-	int16_t x_offset = 10;
-	int16_t y_offset = -290;
-	int16_t z_offset = 4180;
+	int16_t x_offset = 200;
+	int16_t y_offset = 4160;
+	int16_t z_offset = -140;
+	int16_t threshold = 500;
 
 
 
@@ -84,12 +83,7 @@ main(int argc, char* argv[])
   // Infinite loop
   while (1)
     {
-	 x+=3;
-	ssd1306_SetCursor(x, y);
-	ssd1306_WriteString(" o ", Font_7x10, White);
-	ssd1306_UpdateScreen(&I2cHandle);
-
-
+	  // reading the accelaration data
 	HAL_I2C_Mem_Read(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_ACC_X_LSB, I2C_MEMADD_SIZE_8BIT, &lsb, 1, HAL_MAX_DELAY);
 	HAL_I2C_Mem_Read(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_ACC_X_MSB, I2C_MEMADD_SIZE_8BIT, &msb, 1, HAL_MAX_DELAY);
 	acc_x = ((int16_t)((msb << 8) | lsb)) >> 2;
@@ -103,7 +97,26 @@ main(int argc, char* argv[])
 	acc_z = ((int16_t)((msb << 8) | lsb)) >> 2;
 	acc_z = acc_z - z_offset;
 
-	trace_printf("X: %d, Y: %d, Z: %d\n", acc_x, acc_y, acc_z);
+//	trace_printf("X: %d, Y: %d, Z: %d\n", acc_x, acc_y, acc_z);
+
+	// showing the acceleration data on the OLED screen
+	if (acc_x > threshold and y > 10){
+		y-=5;
+	} else if (acc_x < -threshold and y < SSD1306_HEIGHT-20) {
+		y+=5;
+	}
+
+	if (acc_z > threshold and x > 10){
+		x-=5;
+	} else if (acc_z < -threshold and x < SSD1306_HEIGHT-10) {
+		x+=5;
+	}
+	ssd1306_SetCursor(x, y);
+	ssd1306_Fill(Black);
+	ssd1306_WriteString(" o ", Font_7x10, White);
+	ssd1306_UpdateScreen(&I2cHandle);
+
+	trace_printf("X: %d, Y: %d, Z: %d\n", x, y, acc_z);
 
     }
 }
