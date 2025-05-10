@@ -4,6 +4,15 @@
 #include "diag/trace.h"
 #include "stm32f4xx_hal.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "ssd1306.h"
+#ifdef __cplusplus
+}
+#endif
+
 #define BSP_I2C_SPEED                          100000
 
 static void I2Cx_Init(void);
@@ -17,11 +26,35 @@ main(int argc, char* argv[])
 {
 	// Initialize I2C2 - SDA=D14(PB11) SCL=D15(PB10)
 	I2Cx_Init();
+	trace_printf("I2C2 initialized.\n");
+
+	ssd1306_Init(&I2cHandle);
+	trace_printf("OLED initialized.\n");
+
+	ssd1306_Fill(Black);
+	ssd1306_SetCursor(0, 0);
+	ssd1306_WriteString("------------------------", Font_7x10, White);
+	ssd1306_SetCursor(0, SSD1306_HEIGHT-11);
+	ssd1306_WriteString("------------------------", Font_7x10, White);
+
+
+
+	uint8_t x = SSD1306_WIDTH/2-4-7;
+	uint8_t y = SSD1306_HEIGHT/2-5;
+	ssd1306_SetCursor(x, y);
+	ssd1306_WriteString(" o ", Font_7x10, White);
+	ssd1306_UpdateScreen(&I2cHandle);
+	HAL_Delay(1000000);
 
   // Infinite loop
   while (1)
     {
-       // Add your code here.
+	 x+=3;
+	ssd1306_SetCursor(x, y);
+	ssd1306_WriteString(" o ", Font_7x10, White);
+	ssd1306_UpdateScreen(&I2cHandle);
+	trace_printf("%d\n", x);
+
     }
 }
 
