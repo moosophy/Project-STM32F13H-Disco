@@ -15,7 +15,7 @@ extern "C" {
 
 #define _I2C_SPEED                          100000
 
-#define BMA180_I2C_ADDRESS           		(0x40 << 1) 		//chip select to ground (7bit)
+#define BMA180_I2C_ADDR           			(0x40 << 1) 		//chip select to ground (7bit)
 
 #define BMA180_REG_ACC_X_LSB   				0x02		//registers that hold the data
 #define BMA180_REG_ACC_X_MSB   				0x03
@@ -25,9 +25,6 @@ extern "C" {
 #define BMA180_REG_ACC_Z_MSB   				0x07
 
 #define BMA180_REG_GAIN_Z					0x34		// the 8th bit is wake_up bit (should be set to 1)
-
-
-#define
 
 static void I2Cx_Init(void);
 static void I2Cx_MspInit(I2C_HandleTypeDef *hi2c);
@@ -39,9 +36,33 @@ int
 main(int argc, char* argv[])
 {
 	// Initialize I2C2 - SDA=D14(PB11) SCL=D15(PB10)
+
 	I2Cx_Init();
 	trace_printf("I2C2 initialized.\n");
 
+
+	// Setting up accelerometer BMA180
+
+	//	waking up:
+	uint8_t value;
+	HAL_I2C_Mem_Read(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_GAIN_Z, I2C_MEMADD_SIZE_8BIT, &value, 1, HAL_MAX_DELAY);
+	trace_printf("Register 0x%02X = 0x%02X\n", BMA180_REG_GAIN_Z, value);
+	value |= (1 << 7); 		//set the 8th bit to 1 (wake_up = True)
+	HAL_I2C_Mem_Write(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_GAIN_Z, I2C_MEMADD_SIZE_8BIT, &value, 1, HAL_MAX_DELAY);
+
+	// configuration parameters (maybe for later)
+
+	//reading the data:
+	int16_t acc_x = 0, acc_y = 0, acc_z = 0;
+	uint8_t lsb = 0, msb = 0;
+	//offset that i measured on a leveled surface(+-):
+	int16_t x_offset = 10;
+	int16_t y_offset = -290;
+	int16_t z_offset = 4180;
+
+
+
+	// Setting up OLED SSD1306
 	ssd1306_Init(&I2cHandle);
 	trace_printf("OLED initialized.\n");
 
@@ -67,7 +88,22 @@ main(int argc, char* argv[])
 	ssd1306_SetCursor(x, y);
 	ssd1306_WriteString(" o ", Font_7x10, White);
 	ssd1306_UpdateScreen(&I2cHandle);
-	trace_printf("%d\n", x);
+
+
+	HAL_I2C_Mem_Read(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_ACC_X_LSB, I2C_MEMADD_SIZE_8BIT, &lsb, 1, HAL_MAX_DELAY);
+	HAL_I2C_Mem_Read(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_ACC_X_MSB, I2C_MEMADD_SIZE_8BIT, &msb, 1, HAL_MAX_DELAY);
+	acc_x = ((int16_t)((msb << 8) | lsb)) >> 2;
+	acc_x = acc_x - x_offset;
+	HAL_I2C_Mem_Read(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_ACC_Y_LSB, I2C_MEMADD_SIZE_8BIT, &lsb, 1, HAL_MAX_DELAY);
+	HAL_I2C_Mem_Read(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_ACC_Y_MSB, I2C_MEMADD_SIZE_8BIT, &msb, 1, HAL_MAX_DELAY);
+	acc_y = ((int16_t)((msb << 8) | lsb)) >> 2;
+	acc_y = acc_y - y_offset;
+	HAL_I2C_Mem_Read(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_ACC_Z_LSB, I2C_MEMADD_SIZE_8BIT, &lsb, 1, HAL_MAX_DELAY);
+	HAL_I2C_Mem_Read(&I2cHandle, BMA180_I2C_ADDR, BMA180_REG_ACC_Z_MSB, I2C_MEMADD_SIZE_8BIT, &msb, 1, HAL_MAX_DELAY);
+	acc_z = ((int16_t)((msb << 8) | lsb)) >> 2;
+	acc_z = acc_z - z_offset;
+
+	trace_printf("X: %d, Y: %d, Z: %d\n", acc_x, acc_y, acc_z);
 
     }
 }
