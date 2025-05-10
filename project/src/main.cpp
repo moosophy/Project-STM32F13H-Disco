@@ -13,7 +13,21 @@ extern "C" {
 }
 #endif
 
-#define BSP_I2C_SPEED                          100000
+#define _I2C_SPEED                          100000
+
+#define BMA180_I2C_ADDRESS           		(0x40 << 1) 		//chip select to ground (7bit)
+
+#define BMA180_REG_ACC_X_LSB   				0x02		//registers that hold the data
+#define BMA180_REG_ACC_X_MSB   				0x03
+#define BMA180_REG_ACC_Y_LSB   				0x04
+#define BMA180_REG_ACC_Y_MSB   				0x05
+#define BMA180_REG_ACC_Z_LSB   				0x06
+#define BMA180_REG_ACC_Z_MSB   				0x07
+
+#define BMA180_REG_GAIN_Z					0x34		// the 8th bit is wake_up bit (should be set to 1)
+
+
+#define
 
 static void I2Cx_Init(void);
 static void I2Cx_MspInit(I2C_HandleTypeDef *hi2c);
@@ -63,7 +77,7 @@ main(int argc, char* argv[])
 static void I2Cx_Init(void) {
 	if (HAL_I2C_GetState(&I2cHandle) == HAL_I2C_STATE_RESET) {
 		I2cHandle.Instance = I2C2;
-		I2cHandle.Init.ClockSpeed = BSP_I2C_SPEED;
+		I2cHandle.Init.ClockSpeed = _I2C_SPEED;
 		I2cHandle.Init.DutyCycle = I2C_DUTYCYCLE_2;
 		I2cHandle.Init.OwnAddress1 = 0;
 		I2cHandle.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
